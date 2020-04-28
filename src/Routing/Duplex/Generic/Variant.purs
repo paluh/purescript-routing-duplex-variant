@@ -5,13 +5,15 @@ import Prelude
 import Control.Alt ((<|>))
 import Data.Symbol (class IsSymbol)
 import Data.Variant (Variant, case_, inj, on)
-import Heterogeneous.Folding (class FoldingWithIndex, class HFoldlWithIndex, hfoldlWithIndex)
-import Heterogeneous.Mapping (class HMapWithIndex, class MappingWithIndex, hmapWithIndex)
-import Prim.Row (class Cons)
+import Prim.Row (class Cons) as Row
+import Prim.RowList (Cons, Nil) as RowList
+import Prim.RowList (class RowToList, kind RowList)
+import Record (get) as Record
+import Record.Unsafe (unsafeSet)
 import Routing.Duplex (RouteDuplex(..), RouteDuplex', prefix)
 import Routing.Duplex.Parser (RouteParser)
 import Routing.Duplex.Printer (RoutePrinter)
-import Type.Prelude (SProxy, reflectSymbol)
+import Type.Prelude (RLProxy(..), SProxy(..), reflectSymbol)
 
 prs ∷ ∀ a. RouteDuplex' a → RouteParser a
 prs (RouteDuplex _ p) = p
@@ -19,35 +21,40 @@ prs (RouteDuplex _ p) = p
 prt ∷ ∀ a. RouteDuplex' a → (a → RoutePrinter)
 prt (RouteDuplex p _) = p
 
-data VariantParser = VariantParser
+class VariantParser (rl ∷ RowList) (routes ∷ # Type) (variantRoute ∷ #Type) | rl → routes, rl → variantRoute where
+  variantParser ∷ RLProxy rl → Record routes → RouteParser (Variant variantRoute)
 
-instance variantParserUnit ::
-  (IsSymbol sym, Cons sym a v' v) =>
-  FoldingWithIndex VariantParser (SProxy sym) Unit (RouteDuplex a a) (RouteParser (Variant v))
+instance variantParserNil ::
+  (IsSymbol sym, Row.Cons sym (RouteDuplex' a) r' r, Row.Cons sym a v' v) =>
+  VariantParser (RowList.Cons sym (RouteDuplex a a) RowList.Nil) r v
   where
-  foldingWithIndex _ prop _ a = inj prop <$> prs a
+    variantParser _ r = inj prop <$> prs (Record.get prop r)
+      where
+        prop = SProxy ∷ SProxy sym
 
-instance variantParserParser ::
-  (IsSymbol sym, Cons sym a v' v) =>
-  FoldingWithIndex VariantParser (SProxy sym) (RouteParser (Variant v)) (RouteDuplex a a) (RouteParser (Variant v))
+else instance variantParserCons ::
+  (IsSymbol sym, VariantParser tail r v, Row.Cons sym (RouteDuplex' a) r' r, Row.Cons sym a v' v) =>
+  VariantParser (RowList.Cons sym (RouteDuplex a a) tail) r v
   where
-  foldingWithIndex _ prop prev a = prev <|> (inj prop <$> (prs a))
+    variantParser _ r = inj prop <$> prs (Record.get prop r) <|> variantParser (RLProxy ∷ RLProxy tail) r
+      where
+        prop = SProxy ∷ SProxy sym
 
-data VariantPrinter = VariantPrinter
+class VariantPrinter (rl ∷ RowList) (routes ∷ # Type) (variantRoute ∷ #Type) | rl → routes, rl → variantRoute where
+  variantPrinter ∷ RLProxy rl → Record routes → Variant variantRoute → RoutePrinter
 
-instance variantPrinterUnit ::
-  (IsSymbol sym, Cons sym a () v) =>
-  FoldingWithIndex VariantPrinter (SProxy sym) Unit (RouteDuplex a a) (Variant v → RoutePrinter)
+instance variantPrinterNil ::
+  VariantPrinter RowList.Nil r ()
   where
-  foldingWithIndex _ prop _ d = case_ # on prop (prt d)
+    variantPrinter _ _ = case_
 
-instance variantPrinterPrinter ::
-  (IsSymbol sym, Cons sym a v' v) =>
-  FoldingWithIndex VariantPrinter (SProxy sym) (Variant v' → RoutePrinter) (RouteDuplex a a) (Variant v → RoutePrinter)
+else instance variantPrinterCons ::
+  (IsSymbol sym, VariantPrinter tail r v', Row.Cons sym (RouteDuplex' a) r' r, Row.Cons sym a v' v) =>
+  VariantPrinter (RowList.Cons sym (RouteDuplex a a) tail) r v
   where
-  foldingWithIndex _ prop prev d = prev # on prop (prt d)
-
-data PrefixRoutes = PrefixRoutes
+    variantPrinter _ r = variantPrinter (RLProxy ∷ RLProxy tail) r # on prop (prt (Record.get prop r))
+      where
+        prop = SProxy ∷ SProxy sym
 
 -- | Similar to `Route.Duplex.Generic.sum` but for Variant types.
 -- |
@@ -61,28 +68,57 @@ data PrefixRoutes = PrefixRoutes
 -- |  rd = variant { "register": int segment , "login": string segment }
 -- |  ```
 variant
-  ∷ ∀ r v
-  . HFoldlWithIndex VariantParser Unit (Record r) (RouteParser (Variant v))
-  ⇒ HFoldlWithIndex VariantPrinter Unit (Record r) (Variant v → RoutePrinter)
+  ∷ ∀ r rl v
+  . RowToList r rl
+  ⇒ VariantParser rl r v
+  ⇒ VariantPrinter rl r v
   ⇒ Record r
   → RouteDuplex' (Variant v)
 variant routes = RouteDuplex printer parser
   where
-    printer = hfoldlWithIndex VariantPrinter unit routes
-    parser = hfoldlWithIndex VariantParser unit routes
+    printer = variantPrinter (RLProxy ∷ RLProxy rl) routes
+    parser = variantParser (RLProxy ∷ RLProxy rl) routes
 
-instance prefixRoutes ::
-  (IsSymbol sym) =>
-  MappingWithIndex PrefixRoutes (SProxy sym) (RouteDuplex a a) (RouteDuplex a a)
+-- | Rip from purescript-record
+foreign import copyRecord ∷ ∀ r1. Record r1 → Record r1
+
+-- | In place record updater
+data Updater r = Updater (r → r)
+
+instance semigroupUpdater ∷ Semigroup (Updater r) where
+  append (Updater r1) (Updater r2) = Updater (r1 <<< r2)
+
+instance monoidUpdater ∷ Monoid (Updater r) where
+  mempty = Updater identity
+
+modify ∷ ∀ a r r' sym. IsSymbol sym ⇒ Row.Cons sym a r' r ⇒ SProxy sym → (a → a) → Updater (Record r)
+modify prop f = Updater (\r → let a = Record.get prop r in unsafeSet (reflectSymbol prop) (f a) r)
+
+update ∷ ∀ r. Updater (Record r) → Record r → Record r
+update (Updater u) r = u (copyRecord r)
+
+
+class PrefixRoutes (rl ∷ RowList) routes where
+  prefixRoutes ∷ RLProxy rl → Updater { | routes }
+
+instance prefixRoutesNil ∷ PrefixRoutes RowList.Nil routes where
+  prefixRoutes _ = mempty
+
+instance prefixRoutesCons ::
+  (IsSymbol sym, PrefixRoutes tail routes, Row.Cons sym (RouteDuplex a a) r' routes) =>
+  PrefixRoutes (RowList.Cons sym (RouteDuplex a a) tail) routes
   where
-  mappingWithIndex _ prop = prefix (reflectSymbol prop)
+    prefixRoutes _ = modify prop (prefix (reflectSymbol prop)) <> prefixRoutes (RLProxy ∷ RLProxy tail)
+      where
+        prop = SProxy ∷ SProxy sym
 
 -- | Same as `variant` but also sets url prefix based on the label from the given field.
 variant'
-  ∷ ∀ r v
-  . HFoldlWithIndex VariantParser Unit (Record r) (RouteParser (Variant v))
-  ⇒ HFoldlWithIndex VariantPrinter Unit (Record r) (Variant v → RoutePrinter)
-  ⇒ HMapWithIndex PrefixRoutes (Record r) (Record r)
+  ∷ ∀ r rl v
+  . RowToList r rl
+  ⇒ VariantParser rl r v
+  ⇒ VariantPrinter rl r v
+  ⇒ PrefixRoutes rl r
   ⇒ Record r
   → RouteDuplex' (Variant v)
-variant' routes = variant (hmapWithIndex PrefixRoutes routes ∷ Record r)
+variant' routes = variant (update (prefixRoutes (RLProxy ∷ RLProxy rl)) routes)
