@@ -91,12 +91,12 @@ instance monoidUpdater ∷ Monoid (Updater r) where
   mempty = Updater identity
 
 modify ∷ ∀ a r r' sym. IsSymbol sym ⇒ Row.Cons sym a r' r ⇒ SProxy sym → (a → a) → Updater (Record r)
-modify prop f = Updater $ modify'
+modify prop f = Updater modify'
   where
     modify' ∷ Record.Builder.Builder (Record r) (Record r)
     modify' = unsafeCoerce unsafeModify
 
-    unsafeModify ∷ (Record r) → (Record r)
+    unsafeModify ∷ Record r → Record r
     unsafeModify r =
       let a = Record.get prop r
       in unsafeSet (reflectSymbol prop) (f a) r
