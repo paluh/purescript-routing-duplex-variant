@@ -81,7 +81,8 @@ variant routes = RouteDuplex printer parser
     printer = variantPrinter (RLProxy ∷ RLProxy rl) routes
     parser = variantParser (RLProxy ∷ RLProxy rl) routes
 
--- | In place record updater
+-- | In place record updater. Provided to simplify
+-- | PrefixRoutes typeclass signatures
 newtype Updater r = Updater (Record.Builder.Builder r r)
 
 instance semigroupUpdater ∷ Semigroup (Updater r) where
