@@ -34,7 +34,7 @@ instance variantParserNil ::
       where
         prop = SProxy ∷ SProxy sym
 
-else instance variantParserCons ::
+else instance variantParserCons ∷
   (IsSymbol sym, VariantParser tail r v, Row.Cons sym (RouteDuplex' a) r' r, Row.Cons sym a v' v) =>
   VariantParser (RowList.Cons sym (RouteDuplex a a) tail) r v
   where
@@ -50,7 +50,7 @@ instance variantPrinterNil ::
   where
     variantPrinter _ _ = case_
 
-else instance variantPrinterCons ::
+else instance variantPrinterCons ∷
   (IsSymbol sym, VariantPrinter tail r v', Row.Cons sym (RouteDuplex' a) r' r, Row.Cons sym a v' v) =>
   VariantPrinter (RowList.Cons sym (RouteDuplex a a) tail) r v
   where
@@ -111,7 +111,13 @@ class PrefixRoutes (rl ∷ RowList) routes where
 instance prefixRoutesNil ∷ PrefixRoutes RowList.Nil routes where
   prefixRoutes _ = mempty
 
-instance prefixRoutesCons ::
+instance prefixRoutesEmptyCons ::
+  (PrefixRoutes tail routes, Row.Cons "" (RouteDuplex a a) r' routes) =>
+  PrefixRoutes (RowList.Cons "" (RouteDuplex a a) tail) routes
+  where
+    prefixRoutes _ = prefixRoutes (RLProxy ∷ RLProxy tail)
+
+else instance prefixRoutesCons ::
   (IsSymbol sym, PrefixRoutes tail routes, Row.Cons sym (RouteDuplex a a) r' routes) =>
   PrefixRoutes (RowList.Cons sym (RouteDuplex a a) tail) routes
   where
