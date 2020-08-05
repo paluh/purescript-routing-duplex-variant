@@ -12,15 +12,19 @@ module Test.README where
 import Prelude
 
 import Data.Either (Either(..))
-import Data.Generic.Rep (class Generic)
 import Data.Variant (Variant, inj)
 import Effect (Effect)
-import Routing.Duplex (RouteDuplex', int, parse, print, root, segment, string)
-import Routing.Duplex.Generic (noArgs, sum) as D
+import Routing.Duplex (RouteDuplex(..), RouteDuplex', int, parse, print, root, segment, string)
 import Routing.Duplex.Generic.Variant (variant')
+import Routing.Duplex.Parser (end) as Parser
 import Test.Assert (assert)
 import Type.Prelude (SProxy(..))
 
+```
+
+Now we can define some not really practical routes for tesing purposes and use them:
+
+```purescript
 authDuplex :: RouteDuplex'
   (Variant
      ( login :: Int
@@ -54,25 +58,20 @@ authUsage = do
 ## Handling root path with `variant'`
 
 You can use `variant'` combinator toghether with emtpy root path to get proper routing.
-Let's define `Root` 
 
 ```purescript
 
-data Root = Root
-derive instance genericRoot ∷ Generic Root _
-derive instance eqRoot :: Eq Root
-
-rootDuplex ∷ RouteDuplex' Root
-rootDuplex = D.sum { "Root": D.noArgs }
+lastUnitDuplex ∷ RouteDuplex' Unit
+lastUnitDuplex = RouteDuplex mempty (Parser.end *> pure unit)
 
 rootedDuplex :: RouteDuplex'
   (Variant
-     ( "" :: Root
+     ( "" :: Unit
      , "auth" :: Variant (login :: Int, register :: String)
      )
   )
 rootedDuplex = root $ variant'
-  { "": rootDuplex
+  { "": lastUnitDuplex
   , "auth": authDuplex
   }
 
@@ -83,7 +82,7 @@ rootedUsage = do
     "/auth/register/user2"
 
   assert $ eq
-    (print rootedDuplex (inj (SProxy ∷ SProxy "") Root))
+    (print rootedDuplex (inj (SProxy ∷ SProxy "") unit))
     "/"
 
   assert $ eq
@@ -92,5 +91,5 @@ rootedUsage = do
 
   assert $ eq
     (parse rootedDuplex "/")
-    (Right $ inj (SProxy ∷ SProxy "") $ Root)
+    (Right $ inj (SProxy ∷ SProxy "") $ unit)
 ```
