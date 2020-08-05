@@ -1,0 +1,27 @@
+{
+  "name": "purescript-routing-duplex-variant",
+  "version": "0.1.0",
+  "description": "Generate duplexes for Variant based types",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "paluh-litps": "^0.1.4"
+  },
+  "scripts": {
+    "pretest": "paluh-litps compile --file README.md; mv README.purs test/README.purs",
+    "test": "spago test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/paluh/purescript-routing-duplex-variant.git"
+  },
+  "author": "Tomasz Rybarczyk (aka paluh)",
+  "license": "BSD-3-Clause",
+  "bugs": {
+    "url": "https://github.com/paluh/purescript-routing-duplex-variant/issues"
+  },
+  "homepage": "https://github.com/paluh/purescript-routing-duplex-variant#readme"
+}
