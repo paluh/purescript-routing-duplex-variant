@@ -22,7 +22,7 @@ import Type.Prelude (SProxy(..))
 
 ```
 
-Now we can define some not really practical routes for tesing purposes and use them:
+Now we can define some (not really practical) routes for tesing purposes and use them:
 
 ```purescript
 authDuplex :: RouteDuplex'
@@ -58,6 +58,8 @@ authUsage = do
 ## Handling root path with `variant'`
 
 You can use `variant'` combinator toghether with emtpy root path to get proper routing.
+
+We could define here a dedicated `Root` data type and duplex for it here. I'm using the `Unit` type with a bit cheaty duplex to minimize the boilerplate.
 
 ```purescript
 
