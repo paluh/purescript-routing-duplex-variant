@@ -125,13 +125,14 @@ else instance prefixRoutesCons ::
       where
         prop = SProxy ∷ SProxy sym
 
+class (VariantParser rl r v, VariantPrinter rl r v, PrefixRoutes rl r) ⇐ Variant' (rl ∷ RowList) (r ∷ # Type) (v ∷ # Type)
+instance variantParser' ∷ (VariantParser rl r v, VariantPrinter rl r v, PrefixRoutes rl r) ⇒ Variant' rl r v
+
 -- | Same as `variant` but also sets url prefix based on the label from the given field.
 variant'
   ∷ ∀ r rl v
   . RowToList r rl
-  ⇒ VariantParser rl r v
-  ⇒ VariantPrinter rl r v
-  ⇒ PrefixRoutes rl r
+  ⇒ Variant' rl r v
   ⇒ Record r
   → RouteDuplex' (Variant v)
 variant' routes = variant (update (prefixRoutes (RLProxy ∷ RLProxy rl)) routes)
