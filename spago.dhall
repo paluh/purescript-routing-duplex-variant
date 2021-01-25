@@ -1,15 +1,11 @@
-{-
-Welcome to a Spago project!
-You can edit this file as you like.
--}
-{ name = "my-project"
+{ name = "routing-duplex-variant"
 , dependencies =
-    [ "assert"
-    , "console"
-    , "effect"
-    , "routing-duplex"
-    , "variant"
-    ]
+  [ "assert"
+  , "console"
+  , "effect"
+  , "routing-duplex"
+  , "variant"
+  ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs", "test/**/*.purs" ]
 }
