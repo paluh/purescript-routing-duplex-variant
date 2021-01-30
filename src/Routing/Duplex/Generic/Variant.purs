@@ -23,7 +23,7 @@ prs (RouteDuplex _ p) = p
 prt ∷ ∀ a. RouteDuplex' a → (a → RoutePrinter)
 prt (RouteDuplex p _) = p
 
-class VariantParser (rl ∷ RowList) (routes ∷ # Type) (variantRoute ∷ #Type) | routes → variantRoute where
+class VariantParser (rl ∷ RowList) (routes ∷ # Type) (variantRoute ∷ #Type) | routes → variantRoute, rl → routes where
   variantParser ∷ RLProxy rl → Record routes → RouteParser (Variant variantRoute)
 
 instance variantParserNil ::
@@ -42,7 +42,7 @@ else instance variantParserCons ∷
       where
         prop = SProxy ∷ SProxy sym
 
-class VariantPrinter (rl ∷ RowList) (routes ∷ # Type) (variantRoute ∷ #Type) | rl → routes, rl → variantRoute where
+class VariantPrinter (rl ∷ RowList) (routes ∷ # Type) (variantRoute ∷ #Type) | rl → routes, routes → variantRoute where
   variantPrinter ∷ RLProxy rl → Record routes → Variant variantRoute → RoutePrinter
 
 instance variantPrinterNil ::
