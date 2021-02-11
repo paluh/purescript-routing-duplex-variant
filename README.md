@@ -95,3 +95,6 @@ rootedUsage = do
     (parse rootedDuplex "/")
     (Right $ inj (SProxy ∷ SProxy "") $ unit)
 ```
+
+## Credits
+This repo is just adaptation of the sum generic handling code from the original _purescript-routing-duplex_ by @natefaubion.
