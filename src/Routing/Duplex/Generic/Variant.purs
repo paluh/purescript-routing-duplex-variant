@@ -7,7 +7,7 @@ import Data.Symbol (class IsSymbol)
 import Data.Variant (Variant, case_, inj, on)
 import Prim.Row (class Cons) as Row
 import Prim.RowList (Cons, Nil) as RowList
-import Prim.RowList (class RowToList, kind RowList)
+import Prim.RowList (class RowToList, RowList)
 import Record (get) as Record
 import Record.Builder (build, Builder) as Record.Builder
 import Record.Unsafe (unsafeSet)
@@ -23,7 +23,7 @@ prs (RouteDuplex _ p) = p
 prt ∷ ∀ a. RouteDuplex' a → (a → RoutePrinter)
 prt (RouteDuplex p _) = p
 
-class VariantParser (rl ∷ RowList) (routes ∷ # Type) (variantRoute ∷ #Type) | routes → variantRoute where
+class VariantParser (rl ∷ RowList Type) (routes ∷ Row Type) (variantRoute ∷ #Type) | routes → variantRoute where
   variantParser ∷ RLProxy rl → Record routes → RouteParser (Variant variantRoute)
 
 instance variantParserNil ::
@@ -42,7 +42,7 @@ else instance variantParserCons ∷
       where
         prop = SProxy ∷ SProxy sym
 
-class VariantPrinter (rl ∷ RowList) (routes ∷ # Type) (variantRoute ∷ #Type) | rl → routes, rl → variantRoute where
+class VariantPrinter (rl ∷ RowList Type) (routes ∷ Row Type) (variantRoute ∷ #Type) | rl → routes, rl → variantRoute where
   variantPrinter ∷ RLProxy rl → Record routes → Variant variantRoute → RoutePrinter
 
 instance variantPrinterNil ::
@@ -105,7 +105,7 @@ modify prop f = Updater modify'
 update ∷ ∀ r. Updater (Record r) → Record r → Record r
 update (Updater b) r = Record.Builder.build b r
 
-class PrefixRoutes (rl ∷ RowList) routes where
+class PrefixRoutes (rl ∷ RowList Type) routes where
   prefixRoutes ∷ RLProxy rl → Updater { | routes }
 
 instance prefixRoutesNil ∷ PrefixRoutes RowList.Nil routes where
@@ -125,7 +125,7 @@ else instance prefixRoutesCons ::
       where
         prop = SProxy ∷ SProxy sym
 
-class (VariantParser rl r v, VariantPrinter rl r v, PrefixRoutes rl r) ⇐ Variant' (rl ∷ RowList) (r ∷ # Type) (v ∷ # Type)
+class (VariantParser rl r v, VariantPrinter rl r v, PrefixRoutes rl r) ⇐ Variant' (rl ∷ RowList Type) (r ∷ Row Type) (v ∷ Row Type)
 instance variantParser' ∷ (VariantParser rl r v, VariantPrinter rl r v, PrefixRoutes rl r) ⇒ Variant' rl r v
 
 -- | Same as `variant` but also sets url prefix based on the label from the given field.
