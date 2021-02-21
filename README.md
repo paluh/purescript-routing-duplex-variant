@@ -14,9 +14,10 @@ import Prelude
 import Data.Either (Either(..))
 import Data.Variant (Variant, inj)
 import Effect (Effect)
-import Routing.Duplex (RouteDuplex(..), RouteDuplex', int, parse, print, root, segment, string)
-import Routing.Duplex.Generic.Variant (variant')
-import Routing.Duplex.Parser (end) as Parser
+import Request.Duplex (RequestDuplex(..), RequestDuplex', int, parse, print, root, segment, string)
+import Request.Duplex.Generic.Variant (variant')
+import Request.Duplex.Parser (end) as Parser
+import Request.Duplex.Types (Method(Get))
 import Test.Assert (assert)
 import Type.Prelude (SProxy(..))
 
@@ -25,7 +26,10 @@ import Type.Prelude (SProxy(..))
 Now we can define some (not really practical) routes for tesing purposes and use them:
 
 ```purescript
-authDuplex :: RouteDuplex'
+
+req url = { method: Get, url }
+
+authDuplex :: RequestDuplex'
   (Variant
      ( login :: Int
      , register :: String
@@ -40,18 +44,18 @@ authUsage ∷ Effect Unit
 authUsage = do
   assert $ eq
     (print authDuplex (inj (SProxy ∷ SProxy "register") "user1"))
-    "register/user1"
+    (req "register/user1")
 
   assert $ eq
     (print authDuplex (inj (SProxy ∷ SProxy "login") 8))
-    "login/8"
+    (req "login/8")
 
   assert $ eq
-    (parse authDuplex "register/user2")
+    (parse authDuplex (req "register/user2"))
     (Right (inj (SProxy :: SProxy "register") "user2"))
 
   assert $ eq
-    (parse authDuplex "login/22")
+    (parse authDuplex (req "login/22"))
     (Right (inj (SProxy :: SProxy "login") 22))
 ```
 
@@ -63,10 +67,10 @@ We could define here a dedicated `Root` data type and duplex for it here. I'm us
 
 ```purescript
 
-lastUnitDuplex ∷ RouteDuplex' Unit
-lastUnitDuplex = RouteDuplex mempty (Parser.end *> pure unit)
+lastUnitDuplex ∷ RequestDuplex' Unit
+lastUnitDuplex = RequestDuplex mempty (Parser.end *> pure unit)
 
-rootedDuplex :: RouteDuplex'
+rootedDuplex :: RequestDuplex'
   (Variant
      ( "" :: Unit
      , "auth" :: Variant (login :: Int, register :: String)
@@ -81,17 +85,17 @@ rootedUsage ∷ Effect Unit
 rootedUsage = do
   assert $ eq
     (print rootedDuplex (inj (SProxy ∷ SProxy "auth") $ inj (SProxy ∷ SProxy "register") $ "user2"))
-    "/auth/register/user2"
+    (req "/auth/register/user2")
 
   assert $ eq
     (print rootedDuplex (inj (SProxy ∷ SProxy "") unit))
-    "/"
+    (req "/")
 
   assert $ eq
-    (parse rootedDuplex "/auth/register/user2")
+    (parse rootedDuplex $ req "/auth/register/user2")
     (Right $ inj (SProxy ∷ SProxy "auth") $ inj (SProxy ∷ SProxy "register") $ "user2")
 
   assert $ eq
-    (parse rootedDuplex "/")
+    (parse rootedDuplex $ req "/")
     (Right $ inj (SProxy ∷ SProxy "") $ unit)
 ```

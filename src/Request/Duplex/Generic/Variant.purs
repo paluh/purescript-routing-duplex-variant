@@ -1,4 +1,4 @@
-module Routing.Duplex.Generic.Variant where
+module Request.Duplex.Generic.Variant where
 
 import Prelude
 
@@ -11,39 +11,39 @@ import Prim.RowList (class RowToList, kind RowList)
 import Record (get) as Record
 import Record.Builder (build, Builder) as Record.Builder
 import Record.Unsafe (unsafeSet)
-import Routing.Duplex (RouteDuplex(..), RouteDuplex', prefix)
-import Routing.Duplex.Parser (RouteParser)
-import Routing.Duplex.Printer (RoutePrinter)
+import Request.Duplex (RequestDuplex(..), RequestDuplex', prefix)
+import Request.Duplex.Parser (RequestParser)
+import Request.Duplex.Printer (RequestPrinter)
 import Type.Prelude (RLProxy(..), SProxy(..), reflectSymbol)
 import Unsafe.Coerce (unsafeCoerce)
 
-prs ∷ ∀ a. RouteDuplex' a → RouteParser a
-prs (RouteDuplex _ p) = p
+prs ∷ ∀ a. RequestDuplex' a → RequestParser a
+prs (RequestDuplex _ p) = p
 
-prt ∷ ∀ a. RouteDuplex' a → (a → RoutePrinter)
-prt (RouteDuplex p _) = p
+prt ∷ ∀ a. RequestDuplex' a → (a → RequestPrinter)
+prt (RequestDuplex p _) = p
 
 class VariantParser (rl ∷ RowList) (routes ∷ # Type) (variantRoute ∷ #Type) | routes → variantRoute, rl → routes where
-  variantParser ∷ RLProxy rl → Record routes → RouteParser (Variant variantRoute)
+  variantParser ∷ RLProxy rl → Record routes → RequestParser (Variant variantRoute)
 
 instance variantParserNil ::
-  (IsSymbol sym, Row.Cons sym (RouteDuplex' a) r' r, Row.Cons sym a v' v) =>
-  VariantParser (RowList.Cons sym (RouteDuplex a a) RowList.Nil) r v
+  (IsSymbol sym, Row.Cons sym (RequestDuplex' a) r' r, Row.Cons sym a v' v) =>
+  VariantParser (RowList.Cons sym (RequestDuplex a a) RowList.Nil) r v
   where
     variantParser _ r = inj prop <$> prs (Record.get prop r)
       where
         prop = SProxy ∷ SProxy sym
 
 else instance variantParserCons ∷
-  (IsSymbol sym, VariantParser tail r v, Row.Cons sym (RouteDuplex' a) r' r, Row.Cons sym a v' v) =>
-  VariantParser (RowList.Cons sym (RouteDuplex a a) tail) r v
+  (IsSymbol sym, VariantParser tail r v, Row.Cons sym (RequestDuplex' a) r' r, Row.Cons sym a v' v) =>
+  VariantParser (RowList.Cons sym (RequestDuplex a a) tail) r v
   where
     variantParser _ r = inj prop <$> prs (Record.get prop r) <|> variantParser (RLProxy ∷ RLProxy tail) r
       where
         prop = SProxy ∷ SProxy sym
 
 class VariantPrinter (rl ∷ RowList) (routes ∷ # Type) (variantRoute ∷ #Type) | rl → routes, routes → variantRoute where
-  variantPrinter ∷ RLProxy rl → Record routes → Variant variantRoute → RoutePrinter
+  variantPrinter ∷ RLProxy rl → Record routes → Variant variantRoute → RequestPrinter
 
 instance variantPrinterNil ::
   VariantPrinter RowList.Nil r ()
@@ -51,8 +51,8 @@ instance variantPrinterNil ::
     variantPrinter _ _ = case_
 
 else instance variantPrinterCons ∷
-  (IsSymbol sym, VariantPrinter tail r v', Row.Cons sym (RouteDuplex' a) r' r, Row.Cons sym a v' v) =>
-  VariantPrinter (RowList.Cons sym (RouteDuplex a a) tail) r v
+  (IsSymbol sym, VariantPrinter tail r v', Row.Cons sym (RequestDuplex' a) r' r, Row.Cons sym a v' v) =>
+  VariantPrinter (RowList.Cons sym (RequestDuplex a a) tail) r v
   where
     variantPrinter _ r = variantPrinter (RLProxy ∷ RLProxy tail) r # on prop (prt (Record.get prop r))
       where
@@ -61,7 +61,7 @@ else instance variantPrinterCons ∷
 -- | Similar to `Route.Duplex.Generic.sum` but for Variant types.
 -- |
 -- |  ```purescript
--- |  rd ∷ RouteDuplex'
+-- |  rd ∷ RequestDuplex'
 -- |    (Variant
 -- |      ( login ∷ String
 -- |      , register ∷ Int
@@ -75,8 +75,8 @@ variant
   ⇒ VariantParser rl r v
   ⇒ VariantPrinter rl r v
   ⇒ Record r
-  → RouteDuplex' (Variant v)
-variant routes = RouteDuplex printer parser
+  → RequestDuplex' (Variant v)
+variant routes = RequestDuplex printer parser
   where
     printer = variantPrinter (RLProxy ∷ RLProxy rl) routes
     parser = variantParser (RLProxy ∷ RLProxy rl) routes
@@ -112,14 +112,14 @@ instance prefixRoutesNil ∷ PrefixRoutes RowList.Nil routes where
   prefixRoutes _ = mempty
 
 instance prefixRoutesEmptyCons ::
-  (PrefixRoutes tail routes, Row.Cons "" (RouteDuplex a a) r' routes) =>
-  PrefixRoutes (RowList.Cons "" (RouteDuplex a a) tail) routes
+  (PrefixRoutes tail routes, Row.Cons "" (RequestDuplex a a) r' routes) =>
+  PrefixRoutes (RowList.Cons "" (RequestDuplex a a) tail) routes
   where
     prefixRoutes _ = prefixRoutes (RLProxy ∷ RLProxy tail)
 
 else instance prefixRoutesCons ::
-  (IsSymbol sym, PrefixRoutes tail routes, Row.Cons sym (RouteDuplex a a) r' routes) =>
-  PrefixRoutes (RowList.Cons sym (RouteDuplex a a) tail) routes
+  (IsSymbol sym, PrefixRoutes tail routes, Row.Cons sym (RequestDuplex a a) r' routes) =>
+  PrefixRoutes (RowList.Cons sym (RequestDuplex a a) tail) routes
   where
     prefixRoutes _ = modify prop (prefix (reflectSymbol prop)) <> prefixRoutes (RLProxy ∷ RLProxy tail)
       where
@@ -134,5 +134,5 @@ variant'
   . RowToList r rl
   ⇒ Variant' rl r v
   ⇒ Record r
-  → RouteDuplex' (Variant v)
+  → RequestDuplex' (Variant v)
 variant' routes = variant (update (prefixRoutes (RLProxy ∷ RLProxy rl)) routes)

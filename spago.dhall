@@ -7,7 +7,8 @@ You can edit this file as you like.
     [ "assert"
     , "console"
     , "effect"
-    , "routing-duplex"
+    , "request-duplex"
+    , "typelevel-prelude"
     , "variant"
     ]
 , packages = ./packages.dhall
