@@ -1,0 +1,28 @@
+{
+    "name": "purescript-routing-duplex-variant",
+    "license": [
+        "BSD-3-Clause"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/paluh/purescript-routing-duplex-variant.git"
+    },
+    "ignore": [
+        "**/.*",
+        "node_modules",
+        "bower_components",
+        "output"
+    ],
+    "dependencies": {
+        "purescript-assert": "^v5.0.0",
+        "purescript-control": "^v5.0.0",
+        "purescript-effect": "^v3.0.0",
+        "purescript-either": "^v5.0.0",
+        "purescript-prelude": "^v5.0.1",
+        "purescript-record": "^v3.0.0",
+        "purescript-routing-duplex": "^v0.5.1",
+        "purescript-typelevel-prelude": "^v6.0.0",
+        "purescript-unsafe-coerce": "^v5.0.0",
+        "purescript-variant": "^v7.0.3"
+    }
+}
