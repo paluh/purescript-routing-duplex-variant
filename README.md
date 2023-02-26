@@ -18,7 +18,7 @@ import Routing.Duplex (RouteDuplex(..), RouteDuplex', int, parse, print, root, s
 import Routing.Duplex.Generic.Variant (variant')
 import Routing.Duplex.Parser (end) as Parser
 import Test.Assert (assert)
-import Type.Prelude (SProxy(..))
+import Type.Prelude (Proxy(..))
 
 ```
 
@@ -39,20 +39,20 @@ authDuplex = variant'
 authUsage ∷ Effect Unit
 authUsage = do
   assert $ eq
-    (print authDuplex (inj (SProxy ∷ SProxy "register") "user1"))
+    (print authDuplex (inj (Proxy ∷ Proxy "register") "user1"))
     "register/user1"
 
   assert $ eq
-    (print authDuplex (inj (SProxy ∷ SProxy "login") 8))
+    (print authDuplex (inj (Proxy ∷ Proxy "login") 8))
     "login/8"
 
   assert $ eq
     (parse authDuplex "register/user2")
-    (Right (inj (SProxy :: SProxy "register") "user2"))
+    (Right (inj (Proxy :: Proxy "register") "user2"))
 
   assert $ eq
     (parse authDuplex "login/22")
-    (Right (inj (SProxy :: SProxy "login") 22))
+    (Right (inj (Proxy :: Proxy "login") 22))
 ```
 
 ## Handling root path with `variant'`
@@ -80,20 +80,20 @@ rootedDuplex = root $ variant'
 rootedUsage ∷ Effect Unit
 rootedUsage = do
   assert $ eq
-    (print rootedDuplex (inj (SProxy ∷ SProxy "auth") $ inj (SProxy ∷ SProxy "register") $ "user2"))
+    (print rootedDuplex (inj (Proxy ∷ Proxy "auth") $ inj (Proxy ∷ Proxy "register") $ "user2"))
     "/auth/register/user2"
 
   assert $ eq
-    (print rootedDuplex (inj (SProxy ∷ SProxy "") unit))
+    (print rootedDuplex (inj (Proxy ∷ Proxy "") unit))
     "/"
 
   assert $ eq
     (parse rootedDuplex "/auth/register/user2")
-    (Right $ inj (SProxy ∷ SProxy "auth") $ inj (SProxy ∷ SProxy "register") $ "user2")
+    (Right $ inj (Proxy ∷ Proxy "auth") $ inj (Proxy ∷ Proxy "register") $ "user2")
 
   assert $ eq
     (parse rootedDuplex "/")
-    (Right $ inj (SProxy ∷ SProxy "") $ unit)
+    (Right $ inj (Proxy ∷ Proxy "") $ unit)
 ```
 
 ## Credits
